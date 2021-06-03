@@ -2,7 +2,7 @@
 import networkx as nx
 from networkx.algorithms.cluster import average_clustering
 from networkx.generators.community import LFR_benchmark_graph
-from networkx.algorithms import community
+import subprocess
 
 import networkx.algorithms.community as nxcom
 from matplotlib import pyplot as plt
@@ -65,12 +65,14 @@ def draw(g, node_colours):
     print("Build image of graph")  
     pos =  nx.spectral_layout(g)
     #pos =  nx.spring_layout(g)
+    # partition = community_louvain.best_partition(g)
+    # print(partition)
     plt.rcParams.update(plt.rcParamsDefault)
     plt.rcParams.update({'figure.figsize': (15, 10)})
     plt.style.use('dark_background')
 
-    communities = sorted(nxcom.greedy_modularity_communities(g), key=len, reverse=True)
-    print("Found " + str(len(communities))+ " communities")
+    # communities = sorted(nxcom.greedy_modularity_communities(g), key=len, reverse=True)
+    # print("Found " + str(len(communities))+ " communities")
 
     # Set node and edge communities
     set_node_community(g, top_level_communities)
@@ -107,15 +109,22 @@ def draw(g, node_colours):
 
     plt.show()
 
+
+
 # # create a modular graph    WERKT MAAR TE ZWAAR VOOR GN
-n =     5000
-k =     20
-maxk =  60
-mu =    .1#0.1
-tau1 =  2.1#2.0
-tau2 =  1.1#1.1
-minc =  11
+N =     1000    # variable 1000 or 5000
+k =     20      # static
+maxk =  50      # static
+mu =    0.6      # For 0 to 1 in steps
+t1 =  2         # static
+t2 =  1         # static
+
+minc =  10      # variable [10 and 50] or [20 and 100]
 maxc =  50
+
+# input_file = "./input"
+
+LFR_input = " -N " + str(N) + " -k "     + str(k) + " -maxk "  + str(maxk) + " -mu "    + str(mu) + " -t1 "    + str(t1) + " -t2 "    + str(t2) + " -minc "  + str(minc) + " -maxc "  + str(maxc) 
 
 # create a modular graph
 # n =     300
@@ -127,18 +136,29 @@ maxc =  50
 # minc =  90
 # maxc =  70
 
-for i in range(9):
-    mu += 0.1
+for i in range(1):
+    # mu += 0.1
     print("Start LFR generation")
-    g = LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=k, max_degree=maxk, min_community=minc,  seed=10, max_iters=1000, tol=0.45) 
+    # g = LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=k, max_degree=maxk, min_community=minc,  seed=10, max_iters=1000, tol=0.45) 
+    # try:
+    subprocess.run(["./benchmark" +LFR_input] , shell=True)
+    
+    # except Exception:
+    #     pass
+    network_path = './network.dat'
+    communities_path = './community.dat'
+    g = nx.read_edgelist(network_path)
+    
     print("Finnished LFR generation")
-    print(g)
-    top_level_communities = {frozenset(g.nodes[v]["community"]) for v in g}
-
+    # print(g)
+    top_level_communities = sorted(nxcom.greedy_modularity_communities(g), key=len, reverse=True)
+    # top_level_communities = nx.read_adjlist(network_path)
+    # top_level_communities = {frozenset(g.nodes[v]["community"]) for v in g}
+    
     print("Found " + str(len(top_level_communities)) + " communities in the graph")
 
     node_color_array=nodecolours(top_level_communities)
-    print(node_color_array)
+    # print(node_color_array)
 
 
     draw(g, node_color_array);
