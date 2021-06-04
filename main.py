@@ -148,10 +148,10 @@ def getLFR(args):
     g = nx.read_edgelist('./network.dat')
     c = sorted(readCommunitiesFromFile('./community.dat'), key=len, reverse=True)
     # print("Finnished LFR generation")
-    return (g, c)
+    return [g, c]
 
 def getHundredLFR(args):
-    [getLFR(args) for i in range(100)] 
+    return [getLFR(args) for i in range(100)] 
 
 def getCommunitiesLFR(g):
     return sorted(readCommunitiesFromFile('./community.dat'), key=len, reverse=True)
@@ -205,38 +205,82 @@ def runSingleConfigTest(lfrArgs):
     print("Normalized mutual information CLAUSET: " + str(nmi(get_nodes_community_list(g), get_nodes_community_list(g_CLAUSET))))
     print("----------------------------------------------------------------------------")
     
+def runSingleIteration(args, lfrInfo):
+    g = lfrInfo[0]
+    g_GN = g.copy()
+    g_CLAUSET = g.copy()
+    
+    lfrInfo.append(0)         # 'nmi_GN' result sum values
+    lfrInfo.append(0)         # 'nmi_CLAUSET' result sum value
+
+    top_level_communities = lfrInfo[1] #getCommunitiesLFR(g)
+    if(args['N'] < 5000):
+        top_level_communities_GN = getCommunitiesGN(g_GN) 
+    top_level_communities_CLAUSET = getCommunitiesCLAUSET(g_CLAUSET)
+    
+    # print("Generated " + str(len(top_level_communities)) + " communities in the graph")
+    # print("GN Found " + str(len(top_level_communities_GN)) + " communities in the graph")
+    # print("CLAUSET Found " + str(len(top_level_communities_CLAUSET)) + " communities in the graph")
+    
+    draw(g, top_level_communities, 'spec')
+    plt.figure(2)
+    if(args['N'] < 5000):
+        draw(g_GN, top_level_communities_GN, 'spec')
+        plt.figure(3)
+    draw(g_CLAUSET, top_level_communities_CLAUSET, 'spec')
+
+    if(args['N'] < 5000):
+        lfrInfo[2] += nmi(get_nodes_community_list(g), get_nodes_community_list(g_GN))
+
+    lfrInfo[3] += nmi(get_nodes_community_list(g), get_nodes_community_list(g_CLAUSET))
+
+    return lfrInfo
 
 def runCentAverage(args):
     args['nmi_GN'] =0
     args['nmi_CLAUSET'] =0
-    for i in range(1):
-        lfrInfo = getLFR(args)
-        g = lfrInfo[0]
-        g_GN = g.copy()
-        g_CLAUSET = g.copy()
-        
-        top_level_communities = lfrInfo[1] #getCommunitiesLFR(g)
-        if(args['N'] < 1000):
-            top_level_communities_GN = getCommunitiesGN(g_GN) 
-        top_level_communities_CLAUSET = getCommunitiesCLAUSET(g_CLAUSET)
-        
-        # print("Generated " + str(len(top_level_communities)) + " communities in the graph")
-        # print("GN Found " + str(len(top_level_communities_GN)) + " communities in the graph")
-        # print("CLAUSET Found " + str(len(top_level_communities_CLAUSET)) + " communities in the graph")
-        
-        draw(g, top_level_communities, 'spec')
-        plt.figure(2)
-        draw(g_GN, top_level_communities_GN, 'spec')
-        plt.figure(3)
-        draw(g_CLAUSET, top_level_communities_CLAUSET, 'spec')
+    multipleLFR = getHundredLFR(args)
 
-        if(args['N'] < 1000):
-            args['nmi_GN'] += nmi(get_nodes_community_list(g), get_nodes_community_list(g_GN))
+    multipleLFR = Parallel(n_jobs=16)(delayed(runSingleIteration)(args, multipleLFR[i]) for i in range(100))
+    # for i in range(100):
+    #     multipleLFR[i] = runSingleIteration(args, multipleLFR[i])
 
-        args['nmi_CLAUSET'] += nmi(get_nodes_community_list(g), get_nodes_community_list(g_CLAUSET))
+
+    # print(multipleLFR)
+    # for i in range(100):
+    #     g = multipleLFR[i][0]
+    #     multipleLFR[i].append(0)         # 'nmi_GN' result sum values
+    #     multipleLFR[i].append(0)         # 'nmi_CLAUSET' result sum value
+    #     g_GN = g.copy()
+    #     g_CLAUSET = g.copy()
+        
+    #     top_level_communities = multipleLFR[i][1] #getCommunitiesLFR(g)
+    #     if(args['N'] < 1000):
+    #         top_level_communities_GN = getCommunitiesGN(g_GN) 
+    #     top_level_communities_CLAUSET = getCommunitiesCLAUSET(g_CLAUSET)
+        
+    #     # print("Generated " + str(len(top_level_communities)) + " communities in the graph")
+    #     # print("GN Found " + str(len(top_level_communities_GN)) + " communities in the graph")
+    #     # print("CLAUSET Found " + str(len(top_level_communities_CLAUSET)) + " communities in the graph")
+        
+    #     draw(g, top_level_communities, 'spec')
+    #     plt.figure(2)
+    #     if(args['N'] < 1000):
+    #         draw(g_GN, top_level_communities_GN, 'spec')
+    #         plt.figure(3)
+    #     draw(g_CLAUSET, top_level_communities_CLAUSET, 'spec')
+
+    #     if(args['N'] < 1000):
+    #         multipleLFR[i][2] += nmi(get_nodes_community_list(g), get_nodes_community_list(g_GN))
+
+    #     multipleLFR[i][3] += nmi(get_nodes_community_list(g), get_nodes_community_list(g_CLAUSET))
     
-    args['nmi_GN'] #/= 3
-    args['nmi_CLAUSET'] #/= 3
+    # Combine 100 values of gn and clauset and divide by 100 to get average
+    for i in range(100):
+        args['nmi_GN'] += multipleLFR[i][2]
+        args['nmi_CLAUSET'] += multipleLFR[i][3]
+    args['nmi_GN'] /= 100
+    args['nmi_CLAUSET'] /= 100
     return args
 
 def runEachMuCentTimes(args, name):
@@ -244,13 +288,12 @@ def runEachMuCentTimes(args, name):
     print("----------------------------------------------------------------------------")
     print('Configuration: ' + str(name)) 
 
-    for i in range(3): # Run S SN for each mu
+    for i in range(8): # Run S SN for each mu
         resultStats = runCentAverage(args)
         print()
         print("mu = " + str(args['mu']))
         print("Normalized mutual information GN: " + str(resultStats['nmi_GN']))
         print("Normalized mutual information CLAUSET: " + str(resultStats['nmi_CLAUSET']))
-        print()
         args['mu']+=0.1
     print("----------------------------------------------------------------------------")
     print()
@@ -263,26 +306,28 @@ def runEachMuCentTimes(args, name):
 #       Y = S for small amount of nodes (1000) and B for large amount of nodes (5000)
 
 lfrArgs_S_S = {
-    'N':     300  , # variable 1000 or 5000
+    'N':     1000  , # variable 1000 or 5000
     'k':     20   ,   # static
     'maxk':  50   ,   # static
-    'mu':    0.2  ,    # For 0 to 1 in steps
+    'mu':    0.1  ,    # For 0 to 1 in steps
     't1':  2      ,   # static
     't2':  1      ,   # static
 
     'minc':  10   ,   # variable [10 and 50] or [20 and 100]
     'maxc':  50,
 }
-argConfigs = [lfrArgs_S_S,lfrArgs_S_S.copy(),lfrArgs_S_S.copy(),lfrArgs_S_S.copy()] # _S_S
+argConfigs = [lfrArgs_S_S,lfrArgs_S_S.copy(),lfrArgs_S_S.copy(),lfrArgs_S_S.copy()] 
 
-argConfigs[1]['N'] = 5000                                                           # _S_B
+argConfigs[1]['N'] = 1000                                                           # _S_S
+
+argConfigs[1]['N'] = 4000                                                           # _S_B
 
 argConfigs[2]['minc'] = 20                                                          # _B_S
 argConfigs[2]['maxc'] = 100                                                          
 
 argConfigs[3]['minc'] = 20                                                          # _B_B
 argConfigs[3]['maxc'] = 100                             
-argConfigs[3]['N'] = 5000
+argConfigs[3]['N'] = 4000
 
 configNames = ['_S_S (minc,maxc=10,50, N=1000)','_S_B (minc,maxc=10,50, N=5000)','_B_S (minc,maxc=20,100, N=1000)','_B_B (minc,maxc=20,100, N=5000)']
 
@@ -290,6 +335,7 @@ configNames = ['_S_S (minc,maxc=10,50, N=1000)','_S_B (minc,maxc=10,50, N=5000)'
 # plt.show()
 # runEachMuCentTimes(argConfigs[0], configNames[0]) # _S_S
 
+# runEachMuCentTimes(argConfigs[0], configNames[0])
 
 print('Measuring Normalized Mutual information of communities found on LFR graph with Girvan/Newman and Clouset et al. algorithms')
 print('Testing for 4 LFR configurations for 10 intervals of Mu')
