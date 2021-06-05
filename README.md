@@ -1,3 +1,4 @@
+![image](https://user-images.githubusercontent.com/16082928/120901139-5798cf80-c639-11eb-8ccd-460fa25a577c.png)
 # Community
 
 This program tests the perforamnce difference of multiple community detection algorithms on different kinds of generated graphs. It uses Lancichinetti–Fortunato–Radicchi benchmark graphs (see: "Benchmark graphs for testing community detection algorithms" by Andrea Lancichinetti, Santo Fortunato, and Filippo Radicchi, https://arxiv.org/pdf/0805.4770.pdf) and a modification using the Barabási–Albert preferential attachmentmodel (Barabasi and Albert 2002). This model still uses the LFR rewriting steps to maintain a powerlaw distributed community size.
