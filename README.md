@@ -11,6 +11,8 @@ You can change which tests are run by changing the function calls at the end of 
 
 ## Build
 
-Use the included build.sh script to build the c++ code and to also install the required python packages. The script uses pip so you need to have pip installed. If you don't have pip in your path you can mannually run that part by running `/path/to/pip install -r requirements.txt`.
+Use the included build.sh script to build the c++ code and to also install the required python packages. Run
+`sudo chmod +x build.sh` and `./build.sh` to do the compilation and installation.
+
 
 Now you can run the code by running `python3 main.py`.
