@@ -6,6 +6,9 @@ import networkx.algorithms.community as nxcom
 from matplotlib import pyplot as plt
 from numpy.core.shape_base import block
 from joblib import Parallel, delayed
+import copy
+import sys
+
 
 def set_node_community(G, communities):
     '''Add community to node attributes'''
@@ -248,6 +251,7 @@ def runCentAverage(args):
 
     # Multithreaded operation
     multipleLFR = Parallel(n_jobs=16)(delayed(runSingleIteration)(args, multipleLFR[i]) for i in range(100))
+    
     # for i in range(100):
     #     multipleLFR[i] = runSingleIteration(args, multipleLFR[i])
 
@@ -264,13 +268,22 @@ def runEachMuCentTimes(args, name):
     print("----------------------------------------------------------------------------")
     print('Configuration: ' + str(name)) 
 
+    currentArgs = copy.deepcopy(args)
+
     for i in range(5): # Run S SN for each mu
-        resultStats = runCentAverage(args)
-        print()
-        print("mu = " + str(args['mu']))
-        print("Normalized mutual information LABEL_PROPAGATION: " + str(resultStats['nmi_LABEL_PROPAGATION']))
-        print("Normalized mutual information CLAUSET: " + str(resultStats['nmi_CLAUSET']))
-        args['mu']+=0.1
+        resultStats = runCentAverage(currentArgs)
+        
+        
+        # print()
+        # print("mu = " + str(args['mu']))
+        # print("Normalized mutual information LABEL_PROPAGATION: " + str(resultStats['nmi_LABEL_PROPAGATION']))
+        # print("Normalized mutual information CLAUSET: " + str(resultStats['nmi_CLAUSET']))
+        print(str(currentArgs['mu']) + " , " + 
+            str(resultStats['nmi_LABEL_PROPAGATION']) + " , " + 
+            str(resultStats['nmi_CLAUSET'])
+        )
+        sys.stdout.flush()
+        currentArgs['mu']+=0.1
     print("----------------------------------------------------------------------------")
     print()
 
@@ -278,6 +291,7 @@ def runAllTestsLFR(argConfigs, configNames):
     print('Measuring Normalized Mutual information of communities found on LFR graph with label propagation and Clouset et al. algorithms')
     print('Testing for 4 LFR configurations for 10 intervals of Mu')
     print('Each test result is averaged over 100 trials')
+    print('mu , nmi_LABEL_PROPAGATION , nmi_CLAUSET')
     print()
     for i in range(4):
         runEachMuCentTimes(argConfigs[i], configNames[i])
@@ -291,9 +305,10 @@ def runAllTestsBA(argConfigs, configNames):
     print('Measuring Normalized Mutual information of communities found on Barabási-Albert graph with label propagation and Clouset et al. algorithms')
     print('Testing for 4 LFR configurations for 10 intervals of Mu')
     print('Each test result is averaged over 100 trials')
+    print('mu , nmi_LABEL_PROPAGATION , nmi_CLAUSET')
     print()
     for i in range(4):
-        runEachMuCentTimes(argConfigs[i], configNames[i])
+        runEachMuCentTimes(argConfigs[i].copy(), configNames[i])
 
 # LFR graph generation parameters for small communities and small amount of nodes
 # naming done with lfrArgs_X_Y where:
@@ -336,4 +351,5 @@ configNames = ['_S_S (minc,maxc=10,50, N=1000)','_S_B (minc,maxc=10,50, N=5000)'
 #     runSingleConfigTest(argConfigs[0])
 # plt.show()
 
-runAllTestsLFR(argConfigs, configNames)
+runAllTestsLFR(argConfigs.copy(), configNames)
+runAllTestsBA(argConfigs.copy(), configNames)
