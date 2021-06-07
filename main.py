@@ -340,7 +340,7 @@ argConfigs[3]['minc'] = 20                                                      
 argConfigs[3]['maxc'] = 100                             
 argConfigs[3]['N'] = 5000
 
-configNames = ['_S_S (minc,maxc=10,50, N=1000)','_S_B (minc,maxc=10,50, N=5000)','_B_S (minc,maxc=20,100, N=1000)','_B_B (minc,maxc=20,100, N=5000)']
+configNames = ['_S_S (minc=10,maxc=50,N=1000)','_S_B (minc=10,maxc=10,N=5000)','_B_S (minc=20,maxc=100, N=1000)','_B_B (minc=20,maxc=20,N=5000)']
 
 
 
